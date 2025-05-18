@@ -1,0 +1,246 @@
+---
+title: "Tarea 3"
+author: "Luz Elvira SR"
+date: "2025-05-17"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 1
+    theme: cerulean
+---
+
+```{=html}
+<style>
+body {
+text-align: justify}
+</style>
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(knitr)
+library(tidyverse)
+library(pracma)
+library(plotly)
+library(ggplot2)
+library(MASS)
+library(car)
+library(corrplot)
+#library(rgl)
+library(RColorBrewer)
+library(openxlsx)
+library(readxl)
+library(writexl)
+library(quantmod)
+library(xts)
+library(zoo)
+library(dygraphs)
+library(mFilter)
+library(TSstudio)
+library(timetk)
+library(forecast)
+library(tseries)
+#knitr::knit_hooks$set(webgl = hook_webgl)
+```
+
+***INEGI***
+
+**Muestra de índicadores economicos del INEGI**
+
+Tomando indicadores economicos del Inegi, enero de 1993 a diciembre de 2026. Podemos ver y mostrar las fluctuaciones en la economia de muchas ramas (Indicadores en EUA, indicadores de exportaciones e importaciones, de actividades primarias, secundarias, tercearias, etc.). Con ello es poder mostrar algunas gráficas de muestra.
+
+*Nuestra tabla inicial*
+
+```{r}
+inegi_dt<- "C:/Users/luzel/OneDrive/Documentos/AN/inegi_dt.xlsx"
+
+datos_dt<- read.xlsx(inegi_dt)
+
+```
+
+#Analisis de correlación
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+data_numeric <- datos_dt %>% select_if(is.numeric)
+
+corr_matrix <- cor(data_numeric, use= "complete.obs")
+
+print("Análisis de Correlación:")
+print(corr_matrix)
+```
+
+# Regresiones Lineales Simples
+
+## Actividades Primarias \~ Indicador Global de Actividad Economica
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Indicador_Global_Actividad_Economica ~ Actividades_Primarias, data = datos_dt) 
+
+print("Modelo de Regresión Lineal:")
+summary(modelo)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = datos_dt, aes(x = Actividades_Primarias, y = Indicador_Global_Actividad_Economica))+
+  geom_point(color = "orange1", size = 3)+
+  geom_smooth(method = "lm", formula = y ~ x, color = "blue", se=FALSE)+
+  labs(
+    title= "Actividades Primarias vs Indicador Global de Actividad Económica", x = "Actividades Primarias", y="Indicador Global de Actividad Económica")+
+  theme_bw()
+```
+
+**¿Que nos dice los indicadores?** 
+
+Las Actividades Primarias son un predictor relevante y estadísticamente significativo del Indicador Global de Actividad Económica, pero no explican toda la variabilidad observada, lo que invita a considerar factores adicionales para un análisis más integral 
+
+Los residuos *(diferencias entre valores observados y predichos)* van de -24.18 a 22.19, con una mediana cercana a cero, lo que sugiere que el modelo no presenta sesgos graves en la predicción, aunque hay cierta dispersión.
+
+## Precios Consumidor \~ Actividades Terciarias
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Precios_Consumidor ~ Actividades_Terciarias, data = datos_dt) 
+
+print("Modelo de Regresión Lineal:")
+summary(modelo)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = datos_dt, aes(x = Actividades_Terciarias, y = Precios_Consumidor))+
+  geom_point(color = "darkred", size = 3)+
+  geom_smooth(method = "lm", formula = y ~ x, color = "blue4", se=FALSE)+
+  labs(
+    title= "Precios al Consumidor vs Actividades Terciarias", x = "Actividades Terciarias", y="Precios al Consumidor")+
+  theme_bw()
+```
+
+*¿Que nos dice los indicadores?*
+
+Las Actividades Terciarias son un predictor robusto y estadísticamente significativo de los Precios al Consumidor. El alto valor de R-cuadrado indica que el modelo es muy útil para predecir los Precios al Consumidor.
+
+***El modelo explica una gran proporción de la variabilidad en los Precios al Consumidor.***
+
+
+## Actividad Industrial \~ Indicador Global de Actividad Económica
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Actividad_Industrial ~ Indicador_Global_Actividad_Economica, data = datos_dt) 
+
+print("Modelo de Regresión Lineal:")
+summary(modelo)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = datos_dt, aes(x = Indicador_Global_Actividad_Economica, y = Actividad_Industrial))+
+  geom_point(color = "green4", size = 3)+
+  geom_smooth(method = "lm", formula = y ~ x, color = "brown4", se=FALSE)+
+  labs(
+    title= "Actividad Industrial vs Indicador Global de Actividad Económica", x = "Indicador Global de Actividad Economica", y="Actividad Industrial")+
+  theme_bw()
+```
+
+*¿Qué nos dicen los indicadores?*
+
+El coeficiente estimado de 0.7731 indica que cuando el IGAE aumenta en una unidad, la Actividad Industrial aumenta en promedio en 0.77 unidades, lo que sugiere una relación directa y proporcional entre ambas variables.
+
+## Exportaciones Petroleras \~ Precio Promedio del Petróleo Crudo
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Exportaciones_Petroleras ~ Precio_Promedio_Petroleo_Crudo, data = datos_dt) 
+
+print("Modelo de Regresión Lineal:")
+summary(modelo)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = datos_dt, aes(x = Precio_Promedio_Petroleo_Crudo, y = Exportaciones_Petroleras))+
+  geom_point(color = "brown4", size = 3)+
+  geom_smooth(method = "lm", formula = y ~ x, color = "dodgerblue", se=FALSE)+
+  labs(
+    title= "Exportaciones Petroleras vs Precio Promedio del Petróleo Crudo", x = "Precio Promedio de Petróleo Crudo", y="Exportaciones Petroleras")+
+  theme_bw()
+```
+
+*¿Que nos dice los indicadores?*
+
+Se explica aproximadamente el 89% de la variabilidad de las exportaciones, lo que indica que es un predictor muy relevante.
+
+## Exportaciones Totales \~ Importaciones Totales
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Exportaciones_Totales ~ Importaciones_totales, data = datos_dt) 
+
+print("Modelo de Regresión Lineal:")
+summary(modelo)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = datos_dt, aes(x = Importaciones_totales, y = Exportaciones_Totales))+
+  geom_point(color = "deeppink4", size = 3)+
+  geom_smooth(method = "lm", formula = y ~ x, color = "green4", se=FALSE)+
+  labs(
+    title= "Exportaciones Totales vs Importaciones Totales", x = "Importaciones Totales", y="Exportaciones Totales")+
+  theme_bw()
+```
+
+¿Que nos dice los indicadores?
+
+El coeficiente de las importaciones totales (0.9911) indica que, en promedio, por cada unidad adicional de importaciones, las exportaciones aumentan casi en la misma magnitud.El modelo explica el 98.67% de la variabilidad de las exportaciones totales (R-cuadrado ajustado = 0.9867), lo que indica un ajuste excelente.
+
+
+## Importaciones No Petroleras \~ Exportaciones No Petroleras
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Importaciones_No_Petroleras ~ Exportaciones_No_Petroleras, data = datos_dt) 
+
+print("Modelo de Regresión Lineal:")
+summary(modelo)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = datos_dt, aes(x = Exportaciones_No_Petroleras, y = Importaciones_No_Petroleras))+
+  geom_point(color = "yellow", size = 3)+
+  geom_smooth(method = "lm", formula = y ~ x, color = "purple", se=FALSE)+
+  labs(
+    title= "Importaciones No Petroleras vs Exportaciones No Petroleras", x = "Exportaciones No Petroleras", y="Importaciones No Petroleras")+
+  theme_bw()
+```
+
+¿Que nos dice los indicadores?
+
+El coeficiente de las exportaciones no petroleras es 0.9272, lo que indica que, en promedio, por cada unidad adicional de exportaciones no petroleras, las importaciones no petroleras aumentan aproximadamente 0.93 unidades. Las exportaciones no petroleras son un predictor muy sólido y significativo de las importaciones.
+
+#Regresiones Lineales Multiples
+
+## Precios al Consumidor \~ Actividades Terciarias + Precio Promedio de Petróleo Crudo
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Indicador_Global_Actividad_Economica ~ Actividades_Terciarias + Precio_Promedio_Petroleo_Crudo, data = datos_dt)
+print("Modelo de Regresión Lineal Múltiple")
+summary(modelo)
+```
+
+```{r webgl=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+scatter3d(Indicador_Global_Actividad_Economica ~ Actividades_Terciarias + Precio_Promedio_Petroleo_Crudo, data= datos_dt, fit="linear", residuals=TRUE, bg="white", axis.scales=TRUE, 
+  grid=TRUE, ellipsoid=FALSE)
+```
+¿Qué nos dice los indicadores?
+
+El modelo explica el 99.1% de la variabilidad del Indicador Global de Actividad Económica (R-cuadrado ajustado = 0.9912), lo que indica un ajuste excelente y sugiere que las variables incluidas en el modelo son muy relevantes para explicar la evolución de la actividad económica.
+
+## Indicador Global de Actividad Económica \~ Precios al Consumidor Subyacente + Precios al Consumidor
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+modelo <- lm(Indicador_Global_Actividad_Economica ~ Precios_Consumidor_Subyacente + Precios_Consumidor, data = datos_dt)
+print("Modelo de Regresión Lineal Múltiple")
+summary(modelo)
+```
+
+```{r webgl=TRUE, echo=FALSE, warning=FALSE, message=FALSE}
+scatter3d(Indicador_Global_Actividad_Economica ~ Precios_Consumidor_Subyacente + Precios_Consumidor, data= datos_dt, fit="linear", residuals=TRUE, bg="white", axis.scales=TRUE, 
+  grid=TRUE, ellipsoid=FALSE)
+```
+
+¿Que nos dice los indicadores?
+
+El modelo muestra que los precios subyacentes al consumidor son un factor importante y significativo para explicar el comportamiento del Indicador Global de Actividad Económica, mientras que los precios al consumidor generales no presentan un efecto significativo en este contexto.
